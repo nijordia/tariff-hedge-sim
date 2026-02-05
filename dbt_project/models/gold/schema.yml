@@ -1,0 +1,35 @@
+version: 2
+
+models:
+  - name: gold_risk_results
+    description: >
+      Final risk analysis results enriched with invoice metadata.
+      Each row = one invoice × one simulation run.
+      Use is_latest = true for the most recent simulation per invoice.
+    columns:
+      - name: invoice_uuid
+        description: Unique invoice identifier
+        tests:
+          - not_null
+      - name: invoice_id
+        tests:
+          - not_null
+      - name: var_95_eur
+        description: Value at Risk (95%) in EUR
+        tests:
+          - not_null
+      - name: cvar_95_eur
+        description: Conditional VaR (95%) in EUR
+        tests:
+          - not_null
+      - name: hedge_ratio
+        description: Recommended hedge ratio (0.0 to 1.0)
+        tests:
+          - not_null
+      - name: recommendation
+        description: Human-readable hedge recommendation
+        tests:
+          - not_null
+      - name: is_latest
+        tests:
+          - not_null

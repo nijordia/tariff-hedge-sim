@@ -1,0 +1,27 @@
+version: 2
+
+models:
+  - name: silver_invoices
+    description: >
+      Cleaned and validated invoices with traceability columns.
+      Only rows where is_valid = true and is_latest = true should be
+      consumed by the risk simulation.
+    columns:
+      - name: invoice_uuid
+        description: Unique invoice identifier
+        tests:
+          - not_null
+      - name: invoice_id
+        tests:
+          - not_null
+      - name: usd_amount
+        tests:
+          - not_null
+      - name: is_valid
+        description: Passes basic data quality checks
+        tests:
+          - not_null
+      - name: is_latest
+        description: Most recent row per invoice_uuid
+        tests:
+          - not_null

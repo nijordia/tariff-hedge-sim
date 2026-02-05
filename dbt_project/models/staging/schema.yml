@@ -1,0 +1,29 @@
+version: 2
+
+models:
+  - name: stg_bronze_invoices
+    description: >
+      Raw invoice data read from bronze CSV files.
+      One row per invoice per run_date file.
+    columns:
+      - name: invoice_uuid
+        description: Unique identifier for each invoice (UUID4)
+        tests:
+          - not_null
+      - name: invoice_id
+        description: Human-readable invoice ID (EXP-YYYYMMDD-NNN)
+        tests:
+          - not_null
+      - name: usd_amount
+        description: Invoice amount in USD
+        tests:
+          - not_null
+      - name: invoice_date
+        tests:
+          - not_null
+      - name: due_date
+        tests:
+          - not_null
+      - name: horizon_days
+        tests:
+          - not_null

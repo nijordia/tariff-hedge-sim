@@ -1,0 +1,36 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+.venv/
+venv/
+*.egg-info/
+
+# Data (generated at runtime)
+data/bronze/
+data/silver/
+data/gold/
+data/alerts/
+data/tmp/
+data/warehouse.duckdb
+data/warehouse.duckdb.wal
+
+# dbt
+dbt_project/target/
+dbt_project/dbt_packages/
+dbt_project/logs/
+
+# Airflow
+airflow/logs/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+
+# Docker
+postgres_data/
+
+# OS
+.DS_Store
+Thumbs.db

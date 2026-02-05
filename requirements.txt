@@ -1,0 +1,8 @@
+pandas>=2.0
+numpy>=1.24
+pyarrow>=14.0
+pyyaml>=6.0
+duckdb>=0.10
+dbt-core>=1.7
+dbt-duckdb>=1.7
+apache-airflow>=2.8

@@ -1,0 +1,48 @@
+# ============================================================
+# tariff-hedge-sim configuration
+# All key parameters in one place for reproducibility
+# ============================================================
+
+random_seed: 42
+
+# --- Invoice generation ---
+invoice:
+  min_count: 3
+  max_count: 8
+  usd_amount_min: 50000
+  usd_amount_max: 200000
+  horizon_days_min: 90
+  horizon_days_max: 200
+
+# --- FX parameters ---
+fx:
+  spot_rate: 1.0840        # EUR/USD spot
+  forward_rate: 1.0860     # EUR/USD 90-day forward (flat assumption)
+  annualized_volatility: 0.08
+
+# --- Monte Carlo ---
+simulation:
+  num_paths: 10000
+
+# --- Tariff shock scenarios ---
+tariff:
+  scenarios:
+    - probability: 0.70
+      shock: 0.00
+    - probability: 0.20
+      shock: 0.15
+    - probability: 0.10
+      shock: 0.25
+
+# --- Hedge decision thresholds ---
+hedge:
+  threshold: 10.0          # var_percentage below this → no hedge
+  max_threshold: 20.0      # var_percentage above this → full hedge
+
+# --- Paths (relative to project root) ---
+paths:
+  bronze: data/bronze
+  silver: data/silver
+  gold: data/gold
+  alerts: data/alerts
+  tmp: data/tmp

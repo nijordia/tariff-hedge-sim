@@ -1,0 +1,89 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "panels": [
+    {
+      "title": "Portfolio VaR (95%) by Invoice",
+      "type": "barchart",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
+      "targets": [
+        {
+          "rawSql": "SELECT invoice_id, var_95_eur FROM gold_risk_results WHERE is_latest = true ORDER BY var_95_eur",
+          "refId": "A",
+          "format": "table"
+        }
+      ]
+    },
+    {
+      "title": "Hedge Ratio Distribution",
+      "type": "barchart",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
+      "targets": [
+        {
+          "rawSql": "SELECT invoice_id, hedge_ratio FROM gold_risk_results WHERE is_latest = true ORDER BY hedge_ratio DESC",
+          "refId": "A",
+          "format": "table"
+        }
+      ]
+    },
+    {
+      "title": "VaR % vs Threshold",
+      "type": "gauge",
+      "gridPos": { "h": 8, "w": 8, "x": 0, "y": 8 },
+      "targets": [
+        {
+          "rawSql": "SELECT invoice_id, var_percentage FROM gold_risk_results WHERE is_latest = true",
+          "refId": "A",
+          "format": "table"
+        }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "thresholds": {
+            "steps": [
+              { "color": "green", "value": null },
+              { "color": "yellow", "value": 10 },
+              { "color": "red", "value": 20 }
+            ]
+          },
+          "min": 0,
+          "max": 30
+        }
+      }
+    },
+    {
+      "title": "Probability of Loss > 10%",
+      "type": "stat",
+      "gridPos": { "h": 8, "w": 8, "x": 8, "y": 8 },
+      "targets": [
+        {
+          "rawSql": "SELECT invoice_id, prob_loss_gt_10pct * 100 as pct FROM gold_risk_results WHERE is_latest = true",
+          "refId": "A",
+          "format": "table"
+        }
+      ]
+    },
+    {
+      "title": "Recommendations Summary",
+      "type": "table",
+      "gridPos": { "h": 8, "w": 8, "x": 16, "y": 8 },
+      "targets": [
+        {
+          "rawSql": "SELECT invoice_id, usd_amount, hedged_eur, var_95_eur, cvar_95_eur, recommendation FROM gold_risk_results WHERE is_latest = true ORDER BY var_percentage DESC",
+          "refId": "A",
+          "format": "table"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["tariff", "hedge", "fx"],
+  "templating": { "list": [] },
+  "time": { "from": "now-7d", "to": "now" },
+  "title": "Tariff Hedge Risk Overview",
+  "uid": "tariff-hedge-overview"
+}
