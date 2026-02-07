@@ -32,7 +32,7 @@ def ingest_to_bronze(run_date: date | None = None, config_path: Path | None = No
     bronze_dir.mkdir(parents=True, exist_ok=True)
     dest_file = bronze_dir / src_file.name
 
-    shutil.copy2(src_file, dest_file)
+    shutil.copyfile(src_file, dest_file)
     logger.info("Bronze ingested: %s -> %s", src_file, dest_file)
     return dest_file
 
