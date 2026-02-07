@@ -34,3 +34,10 @@ postgres_data/
 # OS
 .DS_Store
 Thumbs.db
+
+# AI
+.claude/
+GRAFANA_SETUP.md
+GRAFANA_QUICKSTART.md
+
+.env
