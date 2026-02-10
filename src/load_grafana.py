@@ -2,55 +2,99 @@
 Load gold data from DuckDB into Postgres for Grafana visualization.
 
 This script:
-1. Reads gold_risk_results from DuckDB warehouse
+1. Reads gold_risk_results (is_latest=true) from DuckDB warehouse
 2. Loads it into Postgres dashboard.gold_risk_results table
 3. Enables Grafana to query the data efficiently
 """
 
 import os
 import sys
-from pathlib import Path
-import yaml
+
 import duckdb
 import psycopg2
 from psycopg2.extras import execute_batch
 
+from src.config_loader import load_config, resolve_path
 
-def load_config():
-    """Load configuration from config.yaml."""
-    config_path = Path(__file__).parent.parent / 'config.yaml'
-    with open(config_path) as f:
-        return yaml.safe_load(f)
+GOLD_COLUMNS = [
+    "invoice_uuid",
+    "invoice_id",
+    "usd_amount",
+    "invoice_date",
+    "due_date",
+    "horizon_days",
+    "hedged_eur",
+    "var_95_eur",
+    "cvar_95_eur",
+    "var_percentage",
+    "hedge_ratio",
+    "recommendation",
+    "prob_loss_positive",
+    "expected_loss_eur",
+    "prob_loss_gt_10pct",
+    "min_loss",
+    "max_loss",
+    "median_loss",
+    "simulation_timestamp",
+    "run_date",
+]
+
+SCHEMA_DDL = """
+CREATE SCHEMA IF NOT EXISTS dashboard;
+
+DROP TABLE IF EXISTS dashboard.gold_risk_results;
+
+CREATE TABLE dashboard.gold_risk_results (
+    invoice_uuid VARCHAR(50) PRIMARY KEY,
+    invoice_id VARCHAR(50) NOT NULL,
+    usd_amount DECIMAL(12, 2),
+    invoice_date DATE,
+    due_date DATE,
+    horizon_days INTEGER,
+    hedged_eur DECIMAL(12, 2),
+    var_95_eur DECIMAL(12, 2),
+    cvar_95_eur DECIMAL(12, 2),
+    var_percentage DECIMAL(5, 2),
+    hedge_ratio DECIMAL(5, 4),
+    recommendation VARCHAR(50),
+    prob_loss_positive DECIMAL(5, 4),
+    expected_loss_eur DECIMAL(12, 2),
+    prob_loss_gt_10pct DECIMAL(5, 4),
+    min_loss DECIMAL(12, 2),
+    max_loss DECIMAL(12, 2),
+    median_loss DECIMAL(12, 2),
+    simulation_timestamp TIMESTAMP,
+    run_date DATE,
+    updated_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_gold_invoice_date ON dashboard.gold_risk_results(invoice_date);
+CREATE INDEX IF NOT EXISTS idx_gold_var_pct ON dashboard.gold_risk_results(var_percentage DESC);
+CREATE INDEX IF NOT EXISTS idx_gold_hedge_ratio ON dashboard.gold_risk_results(hedge_ratio);
+CREATE INDEX IF NOT EXISTS idx_gold_recommendation ON dashboard.gold_risk_results(recommendation);
+CREATE INDEX IF NOT EXISTS idx_gold_updated_at ON dashboard.gold_risk_results(updated_at DESC);
+"""
 
 
 def get_postgres_connection():
     """Get Postgres connection using environment variables or defaults."""
-    # Try environment variables first (from .env)
-    host = os.getenv('POSTGRES_HOST', 'postgres')  # Docker service name
-    port = os.getenv('POSTGRES_PORT', '5432')
-    database = os.getenv('POSTGRES_DB', 'airflow')
-    user = os.getenv('POSTGRES_USER', 'airflow')
-    password = os.getenv('POSTGRES_PASSWORD', 'airflow')
-
     return psycopg2.connect(
-        host=host,
-        port=port,
-        database=database,
-        user=user,
-        password=password
+        host=os.getenv('POSTGRES_HOST', 'postgres'),
+        port=os.getenv('POSTGRES_PORT', '5432'),
+        database=os.getenv('POSTGRES_DB', 'airflow'),
+        user=os.getenv('POSTGRES_USER', 'airflow'),
+        password=os.getenv('POSTGRES_PASSWORD', 'airflow'),
     )
 
 
 def load_to_postgres():
-    """Copy gold_risk_results from DuckDB to Postgres."""
+    """Copy gold_risk_results (is_latest only) from DuckDB to Postgres."""
 
     print("Starting Grafana data load...")
 
-    # Load config
-    config = load_config()
+    cfg = load_config()
+    duckdb_path = resolve_path(cfg, "silver").parent / "warehouse.duckdb"
 
-    # Connect to DuckDB
-    duckdb_path = Path(config['paths']['warehouse'])
     if not duckdb_path.exists():
         print(f"ERROR: DuckDB warehouse not found at {duckdb_path}")
         sys.exit(1)
@@ -60,31 +104,23 @@ def load_to_postgres():
 
     # Check if gold table exists
     tables = conn_duck.execute(
-        "SELECT table_name FROM information_schema.tables WHERE table_name = 'gold_risk_results'"
+        "SELECT table_name FROM information_schema.tables "
+        "WHERE table_name = 'gold_risk_results'"
     ).fetchall()
 
     if not tables:
         print("WARNING: gold_risk_results table not found in DuckDB. Run dbt first.")
         conn_duck.close()
-        sys.exit(0)  # Exit gracefully
+        sys.exit(0)
 
-    # Fetch gold data
-    print("Fetching gold data from DuckDB...")
-    df = conn_duck.execute("""
-        SELECT
-            invoice_id,
-            invoice_date,
-            invoice_value_eur,
-            contract_value_usd,
-            hedged_eur,
-            var_95_eur,
-            var_percentage,
-            hedge_ratio,
-            prob_loss_gt_10pct,
-            recommendation
+    # Fetch gold data (latest simulation per invoice only)
+    print("Fetching gold data from DuckDB (is_latest=true only)...")
+    cols = ", ".join(GOLD_COLUMNS)
+    df = conn_duck.execute(f"""
+        SELECT {cols}
         FROM gold_risk_results
+        WHERE is_latest = true
     """).fetchdf()
-
     conn_duck.close()
 
     if df.empty:
@@ -98,30 +134,20 @@ def load_to_postgres():
     conn_pg = get_postgres_connection()
     cur = conn_pg.cursor()
 
-    # Create schema and table if not exists
+    # Drop and recreate table (handles schema evolution cleanly)
     print("Creating/verifying Postgres schema...")
-    schema_path = Path(__file__).parent.parent / 'sql' / 'grafana_schema.sql'
-    with open(schema_path) as f:
-        cur.execute(f.read())
+    cur.execute(SCHEMA_DDL)
     conn_pg.commit()
 
-    # Truncate and reload (simple full-refresh approach)
-    print("Clearing existing data...")
-    cur.execute("TRUNCATE TABLE dashboard.gold_risk_results")
-
-    # Bulk insert using execute_batch for performance
+    # Bulk insert
     print("Inserting new data...")
-    insert_query = """
-        INSERT INTO dashboard.gold_risk_results (
-            invoice_id, invoice_date, invoice_value_eur, contract_value_usd,
-            hedged_eur, var_95_eur, var_percentage, hedge_ratio,
-            prob_loss_gt_10pct, recommendation
-        ) VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)
+    placeholders = ", ".join(["%s"] * len(GOLD_COLUMNS))
+    insert_query = f"""
+        INSERT INTO dashboard.gold_risk_results ({cols})
+        VALUES ({placeholders})
     """
-
     data = [tuple(row) for row in df.values]
     execute_batch(cur, insert_query, data, page_size=100)
-
     conn_pg.commit()
 
     # Verify load

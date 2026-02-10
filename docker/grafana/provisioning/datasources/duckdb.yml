@@ -5,5 +5,20 @@ datasources:
     type: frser-sqlite-datasource
     access: proxy
     url: /data/warehouse.duckdb
+    isDefault: false
+    editable: true
+
+  - name: PostgreSQL
+    uid: postgres-ds
+    type: postgres
+    access: proxy
+    url: postgres:5432
+    database: airflow
+    user: airflow
+    secureJsonData:
+      password: airflow
+    jsonData:
+      sslmode: disable
+      postgresVersion: 1500
     isDefault: true
     editable: true

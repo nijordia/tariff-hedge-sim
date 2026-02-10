@@ -9,10 +9,12 @@
     {
       "title": "Portfolio VaR (95%) by Invoice",
       "type": "barchart",
+      "datasource": { "type": "postgres", "uid": "postgres-ds" },
       "gridPos": { "h": 8, "w": 12, "x": 0, "y": 0 },
       "targets": [
         {
-          "rawSql": "SELECT invoice_id, var_95_eur FROM gold_risk_results WHERE is_latest = true ORDER BY var_95_eur",
+          "datasource": { "type": "postgres", "uid": "postgres-ds" },
+          "rawSql": "SELECT invoice_id, var_95_eur FROM dashboard.gold_risk_results ORDER BY var_95_eur",
           "refId": "A",
           "format": "table"
         }
@@ -21,10 +23,12 @@
     {
       "title": "Hedge Ratio Distribution",
       "type": "barchart",
+      "datasource": { "type": "postgres", "uid": "postgres-ds" },
       "gridPos": { "h": 8, "w": 12, "x": 12, "y": 0 },
       "targets": [
         {
-          "rawSql": "SELECT invoice_id, hedge_ratio FROM gold_risk_results WHERE is_latest = true ORDER BY hedge_ratio DESC",
+          "datasource": { "type": "postgres", "uid": "postgres-ds" },
+          "rawSql": "SELECT invoice_id, hedge_ratio FROM dashboard.gold_risk_results ORDER BY hedge_ratio DESC",
           "refId": "A",
           "format": "table"
         }
@@ -33,10 +37,12 @@
     {
       "title": "VaR % vs Threshold",
       "type": "gauge",
+      "datasource": { "type": "postgres", "uid": "postgres-ds" },
       "gridPos": { "h": 8, "w": 8, "x": 0, "y": 8 },
       "targets": [
         {
-          "rawSql": "SELECT invoice_id, var_percentage FROM gold_risk_results WHERE is_latest = true",
+          "datasource": { "type": "postgres", "uid": "postgres-ds" },
+          "rawSql": "SELECT invoice_id, var_percentage FROM dashboard.gold_risk_results",
           "refId": "A",
           "format": "table"
         }
@@ -58,10 +64,12 @@
     {
       "title": "Probability of Loss > 10%",
       "type": "stat",
+      "datasource": { "type": "postgres", "uid": "postgres-ds" },
       "gridPos": { "h": 8, "w": 8, "x": 8, "y": 8 },
       "targets": [
         {
-          "rawSql": "SELECT invoice_id, prob_loss_gt_10pct * 100 as pct FROM gold_risk_results WHERE is_latest = true",
+          "datasource": { "type": "postgres", "uid": "postgres-ds" },
+          "rawSql": "SELECT invoice_id, prob_loss_gt_10pct * 100 as pct FROM dashboard.gold_risk_results",
           "refId": "A",
           "format": "table"
         }
@@ -70,10 +78,12 @@
     {
       "title": "Recommendations Summary",
       "type": "table",
+      "datasource": { "type": "postgres", "uid": "postgres-ds" },
       "gridPos": { "h": 8, "w": 8, "x": 16, "y": 8 },
       "targets": [
         {
-          "rawSql": "SELECT invoice_id, usd_amount, hedged_eur, var_95_eur, cvar_95_eur, recommendation FROM gold_risk_results WHERE is_latest = true ORDER BY var_percentage DESC",
+          "datasource": { "type": "postgres", "uid": "postgres-ds" },
+          "rawSql": "SELECT invoice_id, usd_amount, hedged_eur, var_95_eur, cvar_95_eur, recommendation FROM dashboard.gold_risk_results ORDER BY var_percentage DESC",
           "refId": "A",
           "format": "table"
         }

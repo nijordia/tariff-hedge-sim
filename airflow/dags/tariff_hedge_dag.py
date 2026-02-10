@@ -3,7 +3,8 @@ Airflow DAG: tariff-hedge-sim daily pipeline.
 
 Schedule: daily + manual trigger.
 Tasks:
-  generate → ingest_bronze → dbt_run_silver → simulate_risk → dbt_run_gold → generate_alerts
+  generate -> ingest_bronze -> dbt_run_silver -> simulate_risk
+  -> dbt_run_gold -> dbt_test -> load_grafana -> generate_alerts
 """
 
 from datetime import datetime, timedelta
@@ -68,10 +69,15 @@ with DAG(
         ),
     )
 
+    load_grafana = BashOperator(
+        task_id="load_grafana",
+        bash_command=f"cd {PROJECT_DIR} && python -m src.load_grafana",
+    )
+
     alerts = BashOperator(
         task_id="generate_alerts",
         bash_command=f"cd {PROJECT_DIR} && python -m src.generate_alerts",
     )
 
     # Task dependencies
-    generate >> ingest_bronze >> dbt_run_silver >> simulate_risk >> dbt_run_gold >> dbt_test >> alerts
+    generate >> ingest_bronze >> dbt_run_silver >> simulate_risk >> dbt_run_gold >> dbt_test >> load_grafana >> alerts
